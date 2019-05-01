@@ -153,31 +153,32 @@
         $(document).ready(function() 
         {
             //model
-            let model = {};
+            let model1 = {};
+            let model2 = {};
 
             function initializeModel()
             {
                 sendRequest("whoIsLoggedIn", function()
                 {
-                    if (model.error == undefined)
-                        sendRequest("listSongs");    
+                    if (model2.error == undefined)
+                    {
+                         
+                    }
                 });
-                model.count = 16;
-                model.selected = -1;
-                model.boxList = [];
-                model.treasure = Math.floor(Math.random() * model.count);
-                model.guesses = 0;
-                model.gameOver = false;
-                model.lowScore;
-                model.error;
-                model.result;
-                for(var j = 0; j < model.count; j++)
+                model1.count = 6;
+                model1.selected = -1;
+                model1.boxList = [];
+                model1.treasure = Math.floor(Math.random() * model1.count);
+                model1.guesses = 0;
+                model1.gameOver = false;
+                for(var j = 0; j < model1.count; j++)
                 {
-                    if(j == model.treasure)
-                        model.boxList.push({treasure: true, flipped: false});
+                    if(j == model1.treasure)
+                        model1.boxList.push({treasure: true, flipped: false});
                     else
-                        model.boxList.push({treasure: false, flipped: false});
+                        model1.boxList.push({treasure: false, flipped: false});
                 }
+                
                 
             }
         
@@ -186,14 +187,13 @@
             {
                 
                 $('#boxes').empty();
-                if (model.result == undefined)
+                if (model2.result == undefined)
                 {
-                    $("#msg").text(model.error);
+                    $("#msg").text(model2.error);
                     
                     $("#logoutBtn").hide();
                     $("#loginBtn").show();
                     $("#registerBtn").show();
-                    $("#addSongBtn").hide();
                     $("#resetScoreBtn").hide();
                 }
                 else
@@ -203,13 +203,13 @@
                     $("#loginBtn").hide();
                     $("#registerBtn").hide();
                     
-                    if (model.result.email == undefined)
+                    if (model2.result.email == undefined)
                     {
                         
                     }
                     else
                     {
-                        for (var i in model.boxList)
+                        for (var i in model1.boxList)
                         {
                     
                     
@@ -219,11 +219,11 @@
                     
                             item.attr("id", i);
                 
-                            if(model.boxList[i].treasure == true && model.boxList[i].flipped == true)
+                            if(model1.boxList[i].treasure == true && model1.boxList[i].flipped == true)
                             {
                                 item.addClass("treasure");
                             }
-                            else if(model.boxList[i].treasure == false && model.boxList[i].flipped == true)
+                            else if(model1.boxList[i].treasure == false && model1.boxList[i].flipped == true)
                             {   
                                 item.addClass("openBox");
                             }
@@ -231,9 +231,13 @@
                                 item.addClass("closedBox");
                             $('#boxes').append(item);
                         }
-                        $("#guess").text(model.guesses);
-                        $("#lowScore").text(model.lowScore);
-                        $("#msg").text("Hello " + model.result.email);
+                        $("#guess").text(model1.guesses);
+                        if(model2.result.score != undefined)
+                        {
+                            sendRequest("winGame?score="+model2.result.score);
+                            $("#lowScore").text();
+                        }
+                        $("#msg").text("Hello " + model2.result.email);
                     }
                 }
                 
@@ -245,10 +249,11 @@
             //controller
             function sendRequest(url, callback)
             {
+            
                 var jqxhr = $.get(url);
                 jqxhr.done(function(json) 
                 {
-                    model = json;
+                    model2 = json;
                     updateView();
                     if (callback !== undefined)
                         callback();
@@ -256,7 +261,7 @@
                 jqxhr.fail(function(json) 
                 {
                     let error = JSON.stringify(json);
-                    model.error = error;
+                    model2.error = error;
                     updateView();
                 });
             }
@@ -276,7 +281,7 @@
             {
                 sendRequest("logout", function() 
                 {
-                    if (model.error != undefined)
+                    if (model2.error != undefined)
                         $("#songs").empty();
                 });
             });
@@ -288,8 +293,8 @@
                 
                 sendRequest("login?email="+email+"&password="+password, function ()
                 {
-                    if (model.error == undefined)
-                        sendRequest("listSongs");    
+                    if (model2.error == undefined)
+                        sendRequest("playGame");    
                 });
                 $('#loginDlg').modal('hide');
             });
@@ -300,8 +305,8 @@
                 let password = $('#regPassword').val().trim();
                 sendRequest("register?email="+email+"&password="+password, function () 
                 { 
-                    if (model.error == undefined)
-                        sendRequest("listSongs");
+                    if (model2.error == undefined)
+                        sendRequest("playGame");
                 });
                 
                 $('#registerDlg').modal('hide');
@@ -309,18 +314,18 @@
             
             $(document).on("click",".closedBox",function()
             {
-                if(model.gameOver == false)
+                if(model1.gameOver == false)
                 {
-                    model.guesses++;
+                    model1.guesses++;
                     
-                    model.selected = $(this).attr('id');
-                    model.boxList[model.selected].flipped = true;
+                    model1.selected = $(this).attr('id');
+                    model1.boxList[model1.selected].flipped = true;
                     updateView();
-                    console.log(model.guesses);
-                    if(model.selected == model.treasure)
+                    console.log(model1.guesses);
+                    if(model1.selected == model1.treasure)
                     {
                         console.log("You've found the treasure!");
-                        model.gameOver = true;
+                        model1.gameOver = true;
                         winGameModal();
                     }
                 }
@@ -328,6 +333,8 @@
             
             function winGameModal()
             {
+                
+                sendRequest("winGame?score="+model2.result.score);
                 $('#confirm').modal('show');
                 $('#yes').click(function() 
                 {
@@ -340,7 +347,7 @@
                 });
                 $('#btn-secondary').click(function()
                 {
-                    model.gameOver = true;
+                    model1.gameOver = true;
                     $('#confirm').modal('hide');
                 });
                 

@@ -29,7 +29,8 @@ app.all('/whoIsLoggedIn', whoIsLoggedIn);
 app.all('/register', register);
 app.all('/login', login);
 app.all('/logout', logout);
-
+app.all('/playGame', playGame);
+app.all('/winGame', winGame);
 
 
 app.listen(process.env.PORT,  process.env.IP, startHandler());
@@ -39,6 +40,66 @@ function startHandler()
   console.log('Server listening on port ' + process.env.PORT);
 }
 
+function winGame(req, res){
+  var con = mysql.createConnection(conInfo);
+  con.connect(function(err) 
+  {
+    if (err) 
+      writeResult(req, res, {'error' : err});
+    else
+    {
+      con.query("UPDATE USER SET USER_SCORE = ? WHERE USER_ID = ? AND USER_SCORE > ?", [req.query.score, req.session.user.result.id, req.query.score], function (err, result, fields) 
+      {
+        if (err) 
+        {
+          writeResult(req, res, {'error' : err});
+        }
+        else
+        {
+          con.query("SELECT USER_SCORE FROM USER WHERE USER_EMAIL = ?", [req.session.user.result.id], function (err, result, fields) 
+          {
+            if (err) 
+              writeResult(req, res, {'error' : err});
+            else
+            {
+              writeResult(req, res, req.session.score);
+            }
+          });
+        }
+      });
+    }
+  });
+}
+
+function playGame(req, res)
+{
+  if (req.session.user == undefined)
+  {
+    writeResult(req, res, {'error' : "Please login."});
+    return;
+  }
+  var con = mysql.createConnection(conInfo);
+  con.connect(function(err) 
+  {
+    if (err) 
+      writeResult(req, res, {'error' : err});
+    else
+    {
+      con.query("SELECT * FROM USER WHERE USER_ID = ?", [req.session.user.result.id], function (err, result, fields) 
+      {
+        if (err) 
+        {
+          writeResult(req, res, {'error' : err});
+        }
+        else
+        {
+          req.session.user = {"result" : {"id" : result[0].USER_ID, "email": result[0].USER_EMAIL, "best": result[0].USER_SCORE}};
+          writeResult(req, res, req.session.user);
+        }
+      });
+    }
+  });
+}
 
 function whoIsLoggedIn(req, res)
 {
@@ -73,7 +134,7 @@ function register(req, res)
       // rainbow tables, and the cost factor slows down the
       // algorithm which neutralizes brute force attacks ...
       let hash = bcrypt.hashSync(req.query.password, 12);
-      con.query("INSERT INTO USER (USER_EMAIL, USER_PASS) VALUES (?, ?)", [req.query.email, hash], function (err, result, fields) 
+      con.query("INSERT INTO USER (USER_EMAIL, USER_PASS, USER_SCORE) VALUES (?, ?, ?)", [req.query.email, hash, 99], function (err, result, fields) 
       {
         if (err) 
         {
